@@ -1,3 +1,6 @@
+import os
+print(os.environ["HF_HOME"])
+
 import torch.fx
 from transformers import AutoTokenizer
 import torch
@@ -8,10 +11,49 @@ import ast
 from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
 import json
 from modeling_mindmerger import MindMerger
-import os
 from evaluation import *
 import deepspeed
 from mindmerger_tools.deepspeed_config import get_train_ds_config
+from datasets import load_dataset
+
+def read_afrimgsm():
+    langs_map = {
+        "amh": "Amharic",
+        "eng": "English",
+        "ewe": "Ewe",
+        "fra": "French",
+        "hau": "Hausa",
+        "ibo": "Igbo",
+        "kin": "Kinyarwanda",
+        "lin": "Lingala",
+        "lug": "Luganda",
+        "orm": "Oromo",
+        "sna": "Shona",
+        "sot": "Sotho",
+        "swa": "Swahili",
+        "twi": "Twi",
+        # "vai": "Vai", # poor performance due to its unique script
+        "wol": "Wolof",
+        "xho": "Xhosa",
+        "yor": "Yoruba",
+        "zul": "Zulu"
+    }
+
+    datasets_test = {}
+    for lang in langs_map:
+        ds = load_dataset("masakhane/afrimgsm", lang, split="test")
+        samples = []
+        for sample in ds:
+            samples.append({
+                'source': str(sample['question']),
+                'target': str(sample['answer_number']),
+                'source_language': langs_map[lang],
+                'target_language': langs_map[lang]
+            })
+        
+        datasets_test[langs_map[lang]] = samples
+
+    return datasets_test
 
 def main(args):
     llm_path = args.llm_path
@@ -28,8 +70,8 @@ def main(args):
 
     result_path_base = f'./results/{save_name}/{task}/'
 
-    if 'mgsm' in task:
-        test_sets = read_mgsms()
+    if 'afrimgsm' in task:
+        test_sets = read_afrimgsm()
         task = 'math'
     elif 'msvamp' in task:
         test_sets = read_msvamp()
@@ -76,7 +118,7 @@ def main(args):
         model_dict = checkpoint['model_state_dict']
         model.mapping.load_state_dict(model_dict, True)
         print('mapping init from:', init_checkpoint)
-    # model = model.cuda()
+    model = model.cuda()
     parameters = filter(lambda p: p.requires_grad, model.parameters())
     model, optimizer, _, __ = deepspeed.initialize(
         config=ds_config,
@@ -86,28 +128,33 @@ def main(args):
     scores_map = {}
     avg = 0
     for test_lang in test_sets:
-        test_set = test_sets[test_lang]
-        test_sampler = SequentialSampler(test_set)
-        test_set = MathDataset(test_set, task)
-        test_set = torch.utils.data.DataLoader(
-            dataset=test_set,
-            batch_size=eval_batch_size,
-            sampler=test_sampler,
-            shuffle=False,
-            num_workers=1,
-            drop_last=False)
-        if 'math' in task:
-            acc, results_list = evaluate_math(model, test_set, tokenizer_llm, tokenizer_m2m,
-                                                     max_seq_len, max_gen_len, augmentation, langs_map)
-        else:
-            acc, results_list = evaluate_classification(model, test_set, tokenizer_llm, tokenizer_m2m,
-                                              max_seq_len, max_gen_len, augmentation, langs_map)
-        print('test_lang:', test_lang, 'acc:', acc)
-        scores_map[test_lang] = acc
-        result_path = f'{result_path_base}/{test_lang}.json'
-        with open(result_path, 'w', encoding='utf-8') as f:
-            json.dump(results_list, f, ensure_ascii=False, indent=2)
-        avg += acc
+        try:
+            test_set = test_sets[test_lang]
+            test_sampler = SequentialSampler(test_set)
+            test_set = MathDataset(test_set, task)
+            test_set = torch.utils.data.DataLoader(
+                dataset=test_set,
+                batch_size=eval_batch_size,
+                sampler=test_sampler,
+                shuffle=False,
+                num_workers=1,
+                drop_last=False)
+            if 'math' in task:
+                acc, results_list = evaluate_math(model, test_set, tokenizer_llm, tokenizer_m2m,
+                                                        max_seq_len, max_gen_len, augmentation, langs_map)
+            else:
+                acc, results_list = evaluate_classification(model, test_set, tokenizer_llm, tokenizer_m2m,
+                                                max_seq_len, max_gen_len, augmentation, langs_map)
+            print('test_lang:', test_lang, 'acc:', acc)
+            scores_map[test_lang] = acc
+            result_path = f'{result_path_base}/{test_lang}.json'
+            with open(result_path, 'w', encoding='utf-8') as f:
+                json.dump(results_list, f, ensure_ascii=False, indent=2)
+            avg += acc
+        except Exception as e:
+            print(f"{test_lang} exception {e}")
+            raise e
+    
     print(scores_map)
     print('Average accuracy :', round(avg / len(test_sets), 1))
     score_path = f'{result_path_base}/scores.tsv'
@@ -203,12 +250,67 @@ if __name__ == "__main__":
                      'Portuguese': 'pt', 'Albanian': 'sq', 'Serbian': 'sr', 'Turkish': 'tr',
                      'Vietnamese': 'vi', 'Hindi': 'hi', 'Flemish': 'nl', 'Urdu': 'ur'}
     langs_map_nllb = {
-        'English': 'eng_Latn', 'Swahili': 'swh_Latn', 'Chinese': 'zho_Hans', 'Bengali': 'ben_Beng',
-        'German': 'deu_Latn', 'Spanish': 'spa_Latn', 'French': 'fra_Latn', 'Japanese': 'jpn_Jpan',
-        'Russian': 'rus_Cyrl', 'Thai': 'tha_Thai'
+        "English": "eng_Latn",
+        "Swahili": "swh_Latn",
+        "Chinese": "zho_Hans",
+        "Bengali": "ben_Beng",
+        "German": "deu_Latn",
+        "Spanish": "spa_Latn",
+        "French": "fra_Latn",
+        "Japanese": "jpn_Jpan",
+        "Russian": "rus_Cyrl",
+        "Thai": "tha_Thai",
+        "Greek": "ell_Grek",
+        "Telugu": "tel_Telu",
+        "Arabic": "arb_Arab", # could be arb_Latn, we don't use it tho
+        "Bulgarian": "bul_Cyrl",
+        "Croatian": "hrv_Latn",
+        "Hungarian": "hun_Latn",
+        "Italian": "ita_Latn",
+        "Lithuanian": "lit_Latn",
+        "Macedonian": "mkd_Cyrl",
+        "Polish": "pol_Latn",
+        "Portuguese": "por_Latn",
+        "Albanian": "als_Latn",
+        "Serbian": "srp_Cyrl",
+        "Turkish": "tur_Latn",
+        "Vietnamese": "vie_Latn",
+        "Hindi": "hin_Deva",
+        # "Flemish": "nl",
+        "Urdu": "urd_Arab",
+        "Amharic": "amh_Ethi",
+        "Ewe": "ewe_Latn",
+        "Hausa": "hau_Latn",
+        "Igbo": "ibo_Latn",
+        "Kinyarwanda": "kin_Latn",
+        "Lingala": "lin_Latn",
+        "Luganda": "lug_Latn",
+        "Oromo": "gaz_Latn",
+        "Shona": "sna_Latn",
+        "Sotho": "sot_Latn",
+        "Wolof": "wol_Latn",
+        "Twi": "twi_Latn",
+        "Xhosa": "xho_Latn",
+        "Yoruba": "yor_Latn",
+        "Zulu": "zul_Latn",
     }
+    # langs_map_afrimgsm = {
+    #     'Amharic': 'amh', 'English': 'eng', 'Ewe': 'ewe', 'French': 'fra', 'Hausa': 'hau',
+    #     'Igbo': 'ibo', 'Kinyarwanda': 'kin', 'Lingala': 'lin', 'Luganda': 'lug', 'Oromo': 'orm', 
+    #     'Shona': 'sna', 'Sotho': 'sot', 'Swahili': 'swa', 'Twi': 'twi', 'Vai': 'vai', 'Wolof': 'wol', 
+    #     'Xhosa': 'xho', 'Yoruba': 'yor', 'Zulu': 'zul'
+    # }
+    langs_map_afrimgsm = {
+        'Amharic': 'am', 'English': 'en', 'Ewe': 'ee', 'French': 'fr', 'Hausa': 'ha',
+        'Igbo': 'ig', 'Kinyarwanda': 'rw', 'Lingala': 'ln', 'Luganda': 'lg', 'Oromo': 'om', 
+        'Shona': 'sn', 'Sotho': 'st', 'Swahili': 'sw', 'Twi': 'tw', 'Vai': 'vai', 'Wolof': 'wo', 
+        'Xhosa': 'xh', 'Yoruba': 'yo', 'Zulu': 'zu'
+    }
+
     if 'nllb' in args.mt_path:
         langs_map = langs_map_nllb
     else:
-        langs_map = langs_map_m2m
+        langs_map = langs_map_afrimgsm
+
+    print(f"Task={args.task} \n {langs_map_afrimgsm}")
     main(args)

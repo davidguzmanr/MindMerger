@@ -2,14 +2,19 @@ import json
 from torch.utils.data import Dataset
 from .prompts import *
 import random
+from datasets import load_dataset
 
 langs_map = {'English': 'en', 'Swahili': 'sw', 'Chinese': 'zh', 'Bengali': 'bn',
                      'German': 'de', 'Spanish': 'es', 'French': 'fr', 'Japanese': 'ja',
-                     'Russian': 'ru', 'Thai': 'th','Telugu': 'te', 'Greek': 'el',
+                     'Russian': 'ru', 'Thai': 'th', 'Greek': 'el', 'Telugu': 'te',
                      'Arabic': 'ar', 'Bulgarian': 'bg', 'Croatian': 'hr', 'Hungarian': 'hu',
                      'Italian': 'it', 'Lithuanian': 'lt', 'Macedonian': 'mk', 'Polish': 'pl',
                      'Portuguese': 'pt', 'Albanian': 'sq', 'Serbian': 'sr', 'Turkish': 'tr',
-                     'Vietnamese': 'vi', 'Hindi': 'hi', 'Flemish': 'nl', 'Urdu': 'ur'}
+                     'Vietnamese': 'vi', 'Hindi': 'hi', 'Flemish': 'nl', 'Urdu': 'ur', 'Amharic': 'am',
+                     'Ewe': 'ee', 'Hausa': 'ha', 'Igbo': 'ig',
+                     'Kinyarwanda': 'rw','Lingala': 'ln', 'Luganda': 'lg', 'Oromo': 'om', 
+                     'Shona': 'sn', 'Sotho': 'st', 'Wolof': 'wo',
+                     'Twi': 'tw' , 'Xhosa': 'xh','Yoruba': 'yo', 'Zulu': 'zu'}
 
 class MathDataset(Dataset):
     def __init__(self, dataset, task) -> None:
@@ -32,6 +37,46 @@ class MathDataset(Dataset):
             sample['prompt'] = construct_prompt_math(sample['source'])
         return sample
 
+class Gemma2MathDataset(Dataset):
+    def __init__(self, dataset, task) -> None:
+        super().__init__()
+        self.dataset = dataset
+        self.task = task
+    def __len__(self):
+        return len(self.dataset)
+    def __getitem__(self, idx):
+        sample = self.dataset[idx]
+        if self.task == 'translation':
+            sample['prompt'] = construct_prompt_mt_gemma2(sample['source'],
+                                                          sample['source_language'],
+                                                          sample['target_language'])
+        elif 'csqa' in self.task:
+            sample['source'] = sample['prompt'] = construct_prompt_x_csqa(sample)
+        elif 'nli' in self.task:
+            sample['source'] = sample['prompt'] = construct_prompt_xnli(sample)
+        else:
+            sample['prompt'] = construct_prompt_math_gemma2(sample['source'])
+        return sample
+
+def read_afri_lego(train_num, languages):
+    dataset_train = []
+    for train_name in languages:
+        train_name_map = langs_map[train_name]
+        path_base = f'./datas/african_bilingual_pairs/en-{train_name_map}'
+        path_src = f'{path_base}/train_9k.{train_name_map}'
+        path_trg = f'{path_base}/train_9k.en'
+        sources = read_dataset(path_src)[:train_num]
+        targets = read_dataset(path_trg)[:train_num]
+        train_set = [(source, target) for source, target in zip(sources, targets)]
+        for source, target in train_set:
+            dataset_train.append({
+                'source': source,
+                'target': target,
+                'source_language': train_name,
+                'target_language': 'English'
+            })
+    random.shuffle(dataset_train)
+    return dataset_train
 
 def read_lego(train_num, languages):
     # languages = ['Swahili', 'Urdu', 'Hindi', 'Thai', 'Arabic', 'Turkish', 'Greek', 'Vietnamese',
@@ -85,6 +130,43 @@ def read_xnli_train():
     random.shuffle(train_set)
     return train_set
 
+def read_direct_train(dataset_path, train_num):
+    train_set = load_dataset(dataset_path, split='train')
+    dataset_train = []
+    
+    # Collect samples up to the number specified by train_num
+    for i, sample in enumerate(train_set):
+        if i >= train_num:
+            break
+        formatted_sample = {
+            'source': sample['query'],
+            'target': sample['response'],
+        }
+        dataset_train.append(formatted_sample)
+    
+    random.shuffle(dataset_train)
+    return dataset_train
+
+def read_metamath_train(dataset_path, train_num, sample_type):
+    train_set = load_dataset(dataset_path, split='train')
+    dataset_train = []
+    
+    # Collect samples up to the number specified by train_num and filter by type
+    for i, sample in enumerate(train_set):
+        if i >= train_num:
+            break
+        
+        # Check if the sample's type matches the specified sample_type
+        if sample['type'] == sample_type:
+            formatted_sample = {
+                'source': sample['query'],
+                'target': sample['response'],
+            }
+            dataset_train.append(formatted_sample)
+    
+    # Shuffle the filtered dataset
+    random.shuffle(dataset_train)
+    return dataset_train
 
 def read_math_train(train_num):
     train_set = read_dataset('./datas/query_translation/math.json')
@@ -110,6 +192,49 @@ def read_math_train(train_num):
     random.shuffle(dataset_train)
     return dataset_train
 
+def read_afri_math_train(train_num):
+    train_set = read_dataset('./datas/african_query_translation/math.json')
+    train_sets = {}
+    for sample in train_set:
+        lang = sample['lang']
+        sample = {
+            'source': sample['query'],
+            'target': sample['response'],
+            'source_language': lang,
+            'target_language': 'English'
+        }
+        if lang not in train_sets:
+            train_sets[lang] = [sample]
+        else:
+            if len(train_sets[lang]) < train_num:
+                train_sets[lang].append(sample)
+    dataset_train = []
+    for lang in train_sets:
+        dataset = train_sets[lang]
+        for sample in dataset:
+            dataset_train.append(sample)
+    random.shuffle(dataset_train)
+    return dataset_train
+
+def read_metamath(train_num):
+    train_set = read_dataset('./datas/query_translation/math.json')
+    train_sets = {}
+    for sample in train_set:
+        sample = {
+            'source': sample['query'],
+        }
+        if lang not in train_sets:
+            train_sets[lang] = [sample]
+        else:
+            if len(train_sets[lang]) < train_num:
+                train_sets[lang].append(sample)
+    dataset_train = []
+    for lang in train_sets:
+        dataset = train_sets[lang]
+        for sample in dataset:
+            dataset_train.append(sample)
+    random.shuffle(dataset_train)
+    return dataset_train
 
 def read_msvamp():
     datasets_test = {}
@@ -194,6 +319,49 @@ def read_mgsm(path, language):
         })
     return dataset_new
 
+def read_afrimgsms():
+    datasets_test = {}
+    # test_list = ['amh', 'eng', 'ewe', 'fra','hau', 'ibo', 'kin','lin', 'lug', 'orm', 'sna', 'sot', 'swa', 'twi', 'wol','xho', 'yor', 'zul']
+    # test_list = ['Amharic', 'English', 'Ewe', 'French','Hausa', 'Igbo', 'Kinyarwanda', 'Lingala', 'Luganda', 'Oromo', 'Shona', 'Sotho', 'Swahili', 'Twi', 'Wolof', 'Xhosa', 'Yoruba', 'Zulu']
+    test_list = ['English']
+
+    for test_name in test_list:
+        test_name_abb = langs_map[test_name]
+        test_path = f'./datas/evaluation/afrimgsm/data_{test_name_abb}_test.tsv'
+        dataset = read_afrimgsm(test_path, test_name)
+        dataset_test = []
+        for sample in dataset:
+            dataset_test.append({
+                'source': sample['question'],
+                'target': sample['answer'],
+                'source_language': test_name,
+                'target_language': test_name
+            })
+        datasets_test[test_name] = dataset_test
+    return datasets_test
+
+def read_afrimgsm(path, language):
+    dataset = read_docs(path)
+    dataset_new = []
+    for i, sample in enumerate(dataset):
+        sp = sample.split("\t")
+        # print("sp", sp)
+        question = sp[0]
+        # print("question", question)
+        # answer = sp[1].replace(",", '').strip()
+        answer = sp[2].replace(",", '').strip()
+        # print("answer", answer)
+        explanation = ""
+        dataset_new.append({
+            'id': i,
+            'question': question,
+            'explanation': explanation,
+            'answer': answer,
+            'language': language,
+            'source_language': language,
+            'target_language': language
+        })
+    return dataset_new
 
 def read_x_csqa():
     dataset_names = ['Urdu', 'Swahili', 'Hindi', 'Arabic', 'Vietnamese', 'Japanese', 'Polish',

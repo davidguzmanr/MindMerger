@@ -1,4 +1,8 @@
 #coding=utf-8
+import os
+print(f"Running...")
+print(os.environ["HF_HOME"])
+
 import torch.fx
 from tqdm import tqdm
 from transformers import AutoTokenizer
@@ -32,9 +36,11 @@ def main(args):
 
     if stage_name == 'mapping':
         if 'math' in task:
-            languages = ['Bengali', 'Thai', 'Swahili', 'Japanese', 'Chinese', 'German', 'French', 'Russian',
-                         'Spanish']
-            train_set = read_lego(train_num, languages)
+            # languages = ['Bengali', 'Thai', 'Swahili', 'Japanese', 'Chinese', 'German', 'French', 'Russian',
+            #              'Spanish']
+            languages = ['French', 'Swahili', 'Amharic', 'Ewe', 'Hausa', 'Igbo', 'Kinyarwanda', 'Lingala', 
+                         'Luganda', 'Oromo', 'Shona', 'Sotho', 'Wolof', 'Twi', 'Xhosa', 'Yoruba', 'Zulu'] 
+            train_set = read_afri_lego(train_num, languages)
 
         elif 'csqa' in task:
             languages = ['Urdu', 'Hindi', 'Swahili', 'Japanese', 'Vietnamese', 'Polish', 'Chinese',
@@ -48,7 +54,7 @@ def main(args):
         task = 'translation'
     else:
         if 'math' in task:
-            train_set = read_math_train(train_num)
+            train_set = read_afri_math_train(train_num)
         elif 'csqa' in task:
             train_set = read_x_csqa_train()
         else:
@@ -70,6 +76,10 @@ def main(args):
     train_micro_batch_size_per_gpu = args.train_micro_batch_size_per_gpu
     gpu_num = torch.cuda.device_count()
     gradient_accumulation = train_batch_size // (train_micro_batch_size_per_gpu * gpu_num)
+    print(f"train_micro_batch_size_per_gpu {train_micro_batch_size_per_gpu}")
+    print(f"train_batch_size {train_batch_size}")
+    print(f"gradient_accumulation {gradient_accumulation}")
+    print(f"gpu_num {gpu_num}")
     assert train_micro_batch_size_per_gpu * gpu_num * gradient_accumulation == train_batch_size
     ds_config = get_train_ds_config(train_batch_size, train_micro_batch_size_per_gpu, lr, gradient_accumulation)
 
@@ -98,6 +108,7 @@ def main(args):
 
     if stage_name != 'mapping' and args.init_checkpoint is None:
         args.init_checkpoint = f'./outputs/{save_name}/{task}/mapping/pytorch_model.bin'
+        print(f"Changed checkpoint for augmentation stage")
     model = MindMerger(mt_path, llm_path, max_gen_len,
                        tokenizer_llm.bos_token_id,
                        tokenizer_llm.pad_token_id)
@@ -135,7 +146,7 @@ def main(args):
     # best_perplexity = 1000000000
     best_perplexity = evaluate_ppl(model, dev_set, tokenizer_llm, tokenizer_m2m,
                                    max_seq_len, max_gen_len, langs_map, augmentation)
-    eval_step = 2000
+    eval_step = 10000
     for epoch in range(epoch_num):
         model.train()
         tr_loss, nb_tr_steps = 0, 0
@@ -300,18 +311,63 @@ if __name__ == "__main__":
                         'German': 'deu', 'Spanish': 'spa', 'French': 'fra', 'Japanese': 'jpn', 'Russian': 'rus', }
 
     langs_map_m2m = {'English': 'en', 'Swahili': 'sw', 'Chinese': 'zh', 'Bengali': 'bn',
-     'German': 'de', 'Spanish': 'es', 'French': 'fr', 'Japanese': 'ja',
-     'Russian': 'ru', 'Thai': 'th', 'Greek': 'el', 'Telugu': 'te',
-     'Arabic': 'ar', 'Bulgarian': 'bg', 'Croatian': 'hr', 'Hungarian': 'hu',
-     'Italian': 'it', 'Lithuanian': 'lt', 'Macedonian': 'mk', 'Polish': 'pl',
-     'Portuguese': 'pt', 'Albanian': 'sq', 'Serbian': 'sr', 'Turkish': 'tr',
-     'Vietnamese': 'vi', 'Hindi': 'hi', 'Flemish': 'nl', 'Urdu': 'ur'}
+                     'German': 'de', 'Spanish': 'es', 'French': 'fr', 'Japanese': 'ja',
+                     'Russian': 'ru', 'Thai': 'th', 'Greek': 'el', 'Telugu': 'te',
+                     'Arabic': 'ar', 'Bulgarian': 'bg', 'Croatian': 'hr', 'Hungarian': 'hu',
+                     'Italian': 'it', 'Lithuanian': 'lt', 'Macedonian': 'mk', 'Polish': 'pl',
+                     'Portuguese': 'pt', 'Albanian': 'sq', 'Serbian': 'sr', 'Turkish': 'tr',
+                     'Vietnamese': 'vi', 'Hindi': 'hi', 'Flemish': 'nl', 'Urdu': 'ur', 'Amharic': 'am',
+                     'Ewe': 'ee', 'Hausa': 'ha', 'Igbo': 'ig',
+                     'Kinyarwanda': 'rw','Lingala': 'ln', 'Luganda': 'lg', 'Oromo': 'om', 
+                     'Shona': 'sn', 'Sotho': 'st', 'Wolof': 'wo',
+                     'Twi': 'tw' , 'Xhosa': 'xh','Yoruba': 'yo', 'Zulu': 'zu'}
 
     langs_map_nllb = {
-        'English': 'eng_Latn', 'Swahili': 'swh_Latn', 'Chinese': 'zho_Hans', 'Bengali': 'ben_Beng',
-        'German': 'deu_Latn', 'Spanish': 'spa_Latn', 'French': 'fra_Latn', 'Japanese': 'jpn_Jpan',
-        'Russian': 'rus_Cyrl', 'Thai': 'tha_Thai'
+        "English": "eng_Latn",
+        "Swahili": "swh_Latn",
+        "Chinese": "zho_Hans",
+        "Bengali": "ben_Beng",
+        "German": "deu_Latn",
+        "Spanish": "spa_Latn",
+        "French": "fra_Latn",
+        "Japanese": "jpn_Jpan",
+        "Russian": "rus_Cyrl",
+        "Thai": "tha_Thai",
+        "Greek": "ell_Grek",
+        "Telugu": "tel_Telu",
+        "Arabic": "arb_Arab", # could be arb_Latn, we don't use it tho
+        "Bulgarian": "bul_Cyrl",
+        "Croatian": "hrv_Latn",
+        "Hungarian": "hun_Latn",
+        "Italian": "ita_Latn",
+        "Lithuanian": "lit_Latn",
+        "Macedonian": "mkd_Cyrl",
+        "Polish": "pol_Latn",
+        "Portuguese": "por_Latn",
+        "Albanian": "als_Latn",
+        "Serbian": "srp_Cyrl",
+        "Turkish": "tur_Latn",
+        "Vietnamese": "vie_Latn",
+        "Hindi": "hin_Deva",
+        # "Flemish": "nl",
+        "Urdu": "urd_Arab",
+        "Amharic": "amh_Ethi",
+        "Ewe": "ewe_Latn",
+        "Hausa": "hau_Latn",
+        "Igbo": "ibo_Latn",
+        "Kinyarwanda": "kin_Latn",
+        "Lingala": "lin_Latn",
+        "Luganda": "lug_Latn",
+        "Oromo": "gaz_Latn",
+        "Shona": "sna_Latn",
+        "Sotho": "sot_Latn",
+        "Wolof": "wol_Latn",
+        "Twi": "twi_Latn",
+        "Xhosa": "xho_Latn",
+        "Yoruba": "yor_Latn",
+        "Zulu": "zul_Latn",
     }
+
 
     if 'nllb' in args.mt_path:
         langs_map = langs_map_nllb
