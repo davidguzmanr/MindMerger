@@ -54,7 +54,7 @@ def main(args):
         if 'math' in task:
             train_set = read_math_train(train_num)
         elif "nli" in task:
-            train_set
+            train_set = read_americas_xnli_train()
         elif 'csqa' in task:
             train_set = read_x_csqa_train()
         else:
