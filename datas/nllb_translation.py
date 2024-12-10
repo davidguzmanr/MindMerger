@@ -52,10 +52,15 @@ model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(device)  # Move the
 languages = {
     'Aymara': {"nllb_code": "ayr_Latn", "huggingface_code": "aym"},
     'Guarani': {"nllb_code": "grn_Latn", "huggingface_code": "gn"},
-    'Quechua': {"nllb_code": "quy_Latnn", "huggingface_code": "quy"}
+    'Quechua': {"nllb_code": "quy_Latn", "huggingface_code": "quy"}
 }
 
 data = []
+id_to_label = {
+    0: "entailment",
+    1: "neutral",
+    2: "contradiction"
+}
 for lang_name, lang_info in tqdm(languages.items()):
     nllb_code = lang_info["nllb_code"]
     huggingface_code = lang_info["huggingface_code"]
@@ -104,7 +109,7 @@ for lang_name, lang_info in tqdm(languages.items()):
             "premise_en": premise_en,
             "hypothesis": hypothesis,
             "hypothesis_en": hypothesis_en,
-            "response": label,
+            "response": id_to_label[label],
             "lang": lang_name,
             "type": "NLI"
         }

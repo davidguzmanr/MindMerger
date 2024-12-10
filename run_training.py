@@ -36,6 +36,10 @@ def main(args):
                          'Spanish']
             train_set = read_lego(train_num, languages)
 
+        elif "nli" in task:
+            languages = ["Aymara", "Guarani", "Quechua"]
+            train_set = read_americas_lego(train_num, languages)
+
         elif 'csqa' in task:
             languages = ['Urdu', 'Hindi', 'Swahili', 'Japanese', 'Vietnamese', 'Polish', 'Chinese',
                          'Flemish', 'Russian', 'Italian', 'German', 'Portuguese', 'French', 'Spanish', 'Arabic']
@@ -49,6 +53,8 @@ def main(args):
     else:
         if 'math' in task:
             train_set = read_math_train(train_num)
+        elif "nli" in task:
+            train_set
         elif 'csqa' in task:
             train_set = read_x_csqa_train()
         else:
@@ -308,10 +314,22 @@ if __name__ == "__main__":
      'Vietnamese': 'vi', 'Hindi': 'hi', 'Flemish': 'nl', 'Urdu': 'ur'}
 
     langs_map_nllb = {
-        'English': 'eng_Latn', 'Swahili': 'swh_Latn', 'Chinese': 'zho_Hans', 'Bengali': 'ben_Beng',
-        'German': 'deu_Latn', 'Spanish': 'spa_Latn', 'French': 'fra_Latn', 'Japanese': 'jpn_Jpan',
-        'Russian': 'rus_Cyrl', 'Thai': 'tha_Thai'
+        "English": "eng_Latn",
+        "Swahili": "swh_Latn",
+        "Chinese": "zho_Hans",
+        "Bengali": "ben_Beng",
+        "German": "deu_Latn",
+        "Spanish": "spa_Latn",
+        "French": "fra_Latn",
+        "Japanese": "jpn_Jpan",
+        "Russian": "rus_Cyrl",
+        "Thai": "tha_Thai",
+        # AmericasNLI
+        "Aymara": "ayr_Latn",
+        "Guarani": "grn_Latn",
+        "Quechua": "quy_Latn"
     }
+
 
     if 'nllb' in args.mt_path:
         langs_map = langs_map_nllb

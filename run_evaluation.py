@@ -31,6 +31,8 @@ def main(args):
     if 'mgsm' in task:
         test_sets = read_mgsms()
         task = 'math'
+    elif 'nli' in task:
+        test_sets = read_americas_xnli()
     elif 'msvamp' in task:
         test_sets = read_msvamp()
         task = 'math'
@@ -203,10 +205,22 @@ if __name__ == "__main__":
                      'Portuguese': 'pt', 'Albanian': 'sq', 'Serbian': 'sr', 'Turkish': 'tr',
                      'Vietnamese': 'vi', 'Hindi': 'hi', 'Flemish': 'nl', 'Urdu': 'ur'}
     langs_map_nllb = {
-        'English': 'eng_Latn', 'Swahili': 'swh_Latn', 'Chinese': 'zho_Hans', 'Bengali': 'ben_Beng',
-        'German': 'deu_Latn', 'Spanish': 'spa_Latn', 'French': 'fra_Latn', 'Japanese': 'jpn_Jpan',
-        'Russian': 'rus_Cyrl', 'Thai': 'tha_Thai'
+        "English": "eng_Latn",
+        "Swahili": "swh_Latn",
+        "Chinese": "zho_Hans",
+        "Bengali": "ben_Beng",
+        "German": "deu_Latn",
+        "Spanish": "spa_Latn",
+        "French": "fra_Latn",
+        "Japanese": "jpn_Jpan",
+        "Russian": "rus_Cyrl",
+        "Thai": "tha_Thai",
+        # AmericasNLI
+        "Aymara": "ayr_Latn",
+        "Guarani": "grn_Latn",
+        "Quechua": "quy_Latn"
     }
+
     if 'nllb' in args.mt_path:
         langs_map = langs_map_nllb
     else:

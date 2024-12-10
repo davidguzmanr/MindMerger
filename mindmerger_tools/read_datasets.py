@@ -3,13 +3,41 @@ from torch.utils.data import Dataset
 from .prompts import *
 import random
 
-langs_map = {'English': 'en', 'Swahili': 'sw', 'Chinese': 'zh', 'Bengali': 'bn',
-                     'German': 'de', 'Spanish': 'es', 'French': 'fr', 'Japanese': 'ja',
-                     'Russian': 'ru', 'Thai': 'th','Telugu': 'te', 'Greek': 'el',
-                     'Arabic': 'ar', 'Bulgarian': 'bg', 'Croatian': 'hr', 'Hungarian': 'hu',
-                     'Italian': 'it', 'Lithuanian': 'lt', 'Macedonian': 'mk', 'Polish': 'pl',
-                     'Portuguese': 'pt', 'Albanian': 'sq', 'Serbian': 'sr', 'Turkish': 'tr',
-                     'Vietnamese': 'vi', 'Hindi': 'hi', 'Flemish': 'nl', 'Urdu': 'ur'}
+langs_map = {
+    "English": "en",
+    "Swahili": "sw",
+    "Chinese": "zh",
+    "Bengali": "bn",
+    "German": "de",
+    "Spanish": "es",
+    "French": "fr",
+    "Japanese": "ja",
+    "Russian": "ru",
+    "Thai": "th",
+    "Telugu": "te",
+    "Greek": "el",
+    "Arabic": "ar",
+    "Bulgarian": "bg",
+    "Croatian": "hr",
+    "Hungarian": "hu",
+    "Italian": "it",
+    "Lithuanian": "lt",
+    "Macedonian": "mk",
+    "Polish": "pl",
+    "Portuguese": "pt",
+    "Albanian": "sq",
+    "Serbian": "sr",
+    "Turkish": "tr",
+    "Vietnamese": "vi",
+    "Hindi": "hi",
+    "Flemish": "nl",
+    "Urdu": "ur",
+    # AmericasNLI supported languages
+    "Aymara": "ay",
+    "Guarani": "gn",
+    "Quechua": "qu"
+}
+
 
 class MathDataset(Dataset):
     def __init__(self, dataset, task) -> None:
@@ -56,6 +84,26 @@ def read_lego(train_num, languages):
     random.shuffle(dataset_train)
     return dataset_train
 
+def read_americas_lego(train_num, languages):
+    dataset_train = []
+    for train_name in languages:
+        train_name_map = langs_map[train_name]
+        path_base = f'./datas/americas_bilingual_pairs/en-{train_name_map}'
+        path_src = f'{path_base}/train.{train_name_map}'
+        path_trg = f'{path_base}/train.en'
+        sources = read_dataset(path_src)[:train_num]
+        targets = read_dataset(path_trg)[:train_num]
+        train_set = [(source, target) for source, target in zip(sources, targets)]
+        for source, target in train_set:
+            dataset_train.append({
+                'source': source,
+                'target': target,
+                'source_language': train_name,
+                'target_language': 'English'
+            })
+    random.shuffle(dataset_train)
+    return dataset_train
+
 
 def read_x_csqa_train():
     dataset_names = ['Urdu', 'Swahili', 'Hindi', 'Arabic', 'Vietnamese', 'Japanese', 'Polish',
@@ -80,6 +128,19 @@ def read_xnli_train():
     for sample in dataset:
         sample['target'] = sample['label']
         sample['source_language'] = sample['language']
+        sample['target_language'] = 'English'
+        train_set.append(sample)
+    random.shuffle(train_set)
+    return train_set
+
+def read_americas_xnli_train():
+    dataset = read_dataset(f'./datas/americas_query_translation/AmericasNLI.json')
+    train_set = []
+    for sample in dataset:
+        sample['sentence1'] = sample["premise"]
+        sample['sentence2'] = sample["hypothesis"]
+        sample['target'] = sample['response']
+        sample['source_language'] = sample['lang']
         sample['target_language'] = 'English'
         train_set.append(sample)
     random.shuffle(train_set)
@@ -222,6 +283,23 @@ def read_xnli():
         language = sample['language']
         sample['source_language'] = sample['language']
         sample['target_language'] = 'English'
+        if language not in test_sets:
+            test_sets[language] = [sample]
+        else:
+            test_sets[language].append(sample)
+    return test_sets
+
+def read_americas_xnli():
+    dataset = read_dataset(f'./datas/evaluation/AmericasNLI-test.json')
+    test_sets = {}
+    for sample in dataset:
+        sample['sentence1'] = sample["premise"]
+        sample['sentence2'] = sample["hypothesis"]
+        sample['target'] = sample['response']
+        language = sample['lang']
+        sample['source_language'] = sample['lang']
+        sample['target_language'] = 'English'
+        
         if language not in test_sets:
             test_sets[language] = [sample]
         else:
