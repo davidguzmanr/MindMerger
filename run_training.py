@@ -63,6 +63,9 @@ def main(args):
     dev_set = train_set[:args.dev_size]
     train_set = train_set[args.dev_size:]
 
+    print(f"train_set {len(train_set)}")
+    print(f"dev_set {len(dev_set)}")
+
     train_set = MathDataset(train_set, task)
     dev_set = MathDataset(dev_set, task)
     lr = args.lr
@@ -141,7 +144,13 @@ def main(args):
     # best_perplexity = 1000000000
     best_perplexity = evaluate_ppl(model, dev_set, tokenizer_llm, tokenizer_m2m,
                                    max_seq_len, max_gen_len, langs_map, augmentation)
-    eval_step = 2000
+    print(f"best_perplexity {best_perplexity}")
+    
+    if stage_name == 'mapping':
+        eval_step = 2000
+    else:
+        eval_step = 500
+    
     for epoch in range(epoch_num):
         model.train()
         tr_loss, nb_tr_steps = 0, 0
@@ -200,7 +209,6 @@ def main(args):
             best_perplexity = perplexity
             save_model(output_model_path_base, model.mapping)
             print('save new best')
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
