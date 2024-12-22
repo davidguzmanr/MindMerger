@@ -119,6 +119,11 @@ def main(args):
         model.mapping.load_state_dict(model_dict, False)
         print('mapping layer init from:', init_checkpoint)
 
+    # This for a problem with mT5 models and DeepSpeed
+    for param in model.parameters():
+        if not param.data.is_contiguous():
+            param.data = param.data.contiguous()
+
     parameters = filter(lambda p: p.requires_grad, model.parameters())
     model, optimizer, _, __ = deepspeed.initialize(
         config=ds_config,
