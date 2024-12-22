@@ -118,7 +118,7 @@ def main(args):
         model_dict = checkpoint['model_state_dict']
         model.mapping.load_state_dict(model_dict, True)
         print('mapping init from:', init_checkpoint)
-    model = model.cuda()
+    # model = model.cuda()
     parameters = filter(lambda p: p.requires_grad, model.parameters())
     model, optimizer, _, __ = deepspeed.initialize(
         config=ds_config,
