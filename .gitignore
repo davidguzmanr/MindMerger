@@ -129,5 +129,8 @@ dmypy.json
 .pyre/
 
 # Data, outputs and others
-datas/
+datas/bilingual_pairs/
+datas/evaluation/
+datas/query_translation/
 outputs/
+results/
