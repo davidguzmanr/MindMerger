@@ -134,7 +134,7 @@ def read_xnli_train():
     return train_set
 
 def read_americas_xnli_train():
-    dataset = read_dataset(f'./datas/americas_query_translation/AmericasNLI.json')
+    dataset = read_dataset(f'./datas/americas_query_translation/AmericasNLI-en.json')
     train_set = []
     for sample in dataset:
         sample['sentence1'] = sample["premise"]
@@ -290,7 +290,7 @@ def read_xnli():
     return test_sets
 
 def read_americas_xnli():
-    dataset = read_dataset(f'./datas/evaluation/AmericasNLI-test.json')
+    dataset = read_dataset(f'./datas/evaluation/AmericasNLI-test-all.json')
     test_sets = {}
     for sample in dataset:
         sample['sentence1'] = sample["premise"]

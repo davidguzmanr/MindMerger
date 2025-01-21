@@ -44,7 +44,7 @@ def translate_sentences_in_batches(
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Load the model and tokenizer
-model_name = "facebook/nllb-200-distilled-600M"
+model_name = "facebook/nllb-200-distilled-1.3B"
 tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False)
 model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(device)  # Move the model to the appropriate device
 

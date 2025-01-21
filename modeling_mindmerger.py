@@ -45,7 +45,7 @@ class MindMerger(nn.Module):
         else:
             self.encoder_mt = self.model_mt.get_encoder()
         print('used size:', sum(param.numel() for param in self.encoder_mt.parameters()) / 1000000)
-        model_llm = AutoModelForCausalLM.from_pretrained(llm_path)
+        model_llm = AutoModelForCausalLM.from_pretrained(llm_path, attn_implementation='eager')
         self.model_llm = model_llm
         self.llm_embedding_layer = self.model_llm.get_input_embeddings()
         for name, parameter in self.model_llm.named_parameters():
