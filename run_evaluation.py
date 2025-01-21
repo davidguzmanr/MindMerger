@@ -218,7 +218,15 @@ if __name__ == "__main__":
         # AmericasNLI
         "Aymara": "ayr_Latn",
         "Guarani": "grn_Latn",
-        "Quechua": "quy_Latn"
+        "Quechua": "quy_Latn",
+        # For cross-lingual transfer
+        "Ashaninka": "spa_Latn", 
+        "Bribri": "spa_Latn", 
+        "Raramuri": "spa_Latn", 
+        "Nahuatl": "spa_Latn", 
+        "Otomi": "spa_Latn", 
+        "Shipibo-Konibo": "spa_Latn", 
+        "Wixarika": "spa_Latn"
     }
 
     if 'nllb' in args.mt_path:

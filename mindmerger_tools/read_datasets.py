@@ -90,7 +90,7 @@ def read_americas_lego(train_num, languages):
         train_name_map = langs_map[train_name]
         path_base = f'./datas/americas_bilingual_pairs/en-{train_name_map}'
         path_src = f'{path_base}/train.{train_name_map}'
-        path_trg = f'{path_base}/train.en'
+        path_trg = f'{path_base}/train.es'
         sources = read_dataset(path_src)[:train_num]
         targets = read_dataset(path_trg)[:train_num]
         train_set = [(source, target) for source, target in zip(sources, targets)]
@@ -99,7 +99,7 @@ def read_americas_lego(train_num, languages):
                 'source': source,
                 'target': target,
                 'source_language': train_name,
-                'target_language': 'English'
+                'target_language': 'Spanish'
             })
     random.shuffle(dataset_train)
     return dataset_train
@@ -134,14 +134,14 @@ def read_xnli_train():
     return train_set
 
 def read_americas_xnli_train():
-    dataset = read_dataset(f'./datas/americas_query_translation/AmericasNLI-en.json')
+    dataset = read_dataset(f'./datas/americas_query_translation/AmericasNLI-es.json')
     train_set = []
     for sample in dataset:
         sample['sentence1'] = sample["premise"]
         sample['sentence2'] = sample["hypothesis"]
         sample['target'] = sample['response']
         sample['source_language'] = sample['lang']
-        sample['target_language'] = 'English'
+        sample['target_language'] = 'Spanish'
         train_set.append(sample)
     random.shuffle(train_set)
     return train_set
@@ -298,7 +298,7 @@ def read_americas_xnli():
         sample['target'] = sample['response']
         language = sample['lang']
         sample['source_language'] = sample['lang']
-        sample['target_language'] = 'English'
+        sample['target_language'] = 'Spanish'
         
         if language not in test_sets:
             test_sets[language] = [sample]

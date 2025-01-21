@@ -77,7 +77,7 @@ for lang_name, lang_info in tqdm(languages.items()):
         tokenizer,
         premises,
         source_lang=nllb_code,
-        target_lang="eng_Latn",
+        target_lang="spa_Latn",
         batch_size=4
     )
 
@@ -87,7 +87,7 @@ for lang_name, lang_info in tqdm(languages.items()):
         tokenizer,
         hypotheses,
         source_lang=nllb_code,
-        target_lang="eng_Latn",
+        target_lang="spa_Latn",
         batch_size=4
     )
 
@@ -97,8 +97,8 @@ for lang_name, lang_info in tqdm(languages.items()):
         premise = premises[i]
         hypothesis = hypotheses[i]
         
-        premise_en = translated_premises[i]
-        hypothesis_en = translated_hypotheses[i]
+        premise_es = translated_premises[i]
+        hypothesis_es = translated_hypotheses[i]
         
         label = labels[i]
 
@@ -106,9 +106,9 @@ for lang_name, lang_info in tqdm(languages.items()):
             # "query": query_translated,
             # "query_en": query_en,
             "premise": premise,
-            "premise_en": premise_en,
+            "premise_es": premise_es,
             "hypothesis": hypothesis,
-            "hypothesis_en": hypothesis_en,
+            "hypothesis_es": hypothesis_es,
             "response": id_to_label[label],
             "lang": lang_name,
             "type": "NLI"
