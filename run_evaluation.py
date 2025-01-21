@@ -79,6 +79,12 @@ def main(args):
         model.mapping.load_state_dict(model_dict, True)
         print('mapping init from:', init_checkpoint)
     # model = model.cuda()
+
+    # This for a problem with mT5 models and DeepSpeed
+    for param in model.parameters():
+        if not param.data.is_contiguous():
+            param.data = param.data.contiguous()
+
     parameters = filter(lambda p: p.requires_grad, model.parameters())
     model, optimizer, _, __ = deepspeed.initialize(
         config=ds_config,
@@ -203,7 +209,13 @@ if __name__ == "__main__":
                      'Arabic': 'ar', 'Bulgarian': 'bg', 'Croatian': 'hr', 'Hungarian': 'hu',
                      'Italian': 'it', 'Lithuanian': 'lt', 'Macedonian': 'mk', 'Polish': 'pl',
                      'Portuguese': 'pt', 'Albanian': 'sq', 'Serbian': 'sr', 'Turkish': 'tr',
-                     'Vietnamese': 'vi', 'Hindi': 'hi', 'Flemish': 'nl', 'Urdu': 'ur'}
+                     'Vietnamese': 'vi', 'Hindi': 'hi', 'Flemish': 'nl', 'Urdu': 'ur',
+                     # Americas NLI
+                     "Aymara": "ay", "Guarani": "gn", "Quechua": "qu", 
+                     # For cross-lingual transfer
+                     "Ashaninka": "spa", "Bribri": "spa", "Raramuri": "spa", "Nahuatl": "spa", 
+                     "Otomi": "spa", "Shipibo-Konibo": "spa", "Wixarika": "spa"
+                     }
     langs_map_nllb = {
         "English": "eng_Latn",
         "Swahili": "swh_Latn",
