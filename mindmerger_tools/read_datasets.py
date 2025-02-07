@@ -290,7 +290,7 @@ def read_xnli():
     return test_sets
 
 def read_americas_xnli():
-    dataset = read_dataset(f'./datas/evaluation/AmericasNLI-test-all.json')
+    dataset = read_dataset(f'./datas/evaluation/AmericasNLI-test.json')
     test_sets = {}
     for sample in dataset:
         sample['sentence1'] = sample["premise"]
