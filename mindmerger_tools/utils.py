@@ -21,6 +21,18 @@ def save_model(output_model_file, model, model_name='pytorch_model.bin'):
         'model_state_dict': model.state_dict(),
     }, output_model_file, _use_new_zipfile_serialization=False)
 
+def save_reasoner_model(output_model_file, model, is_lora=False, lora_model=None, model_name='pytorch_model.bin'):
+    os.makedirs(output_model_file, exist_ok=True)
+    
+    output_lora_dir = output_model_file + "lora_adapter"
+    output_model_file += model_name
+    
+    torch.save({
+        'model_state_dict': model.state_dict(),
+    }, output_model_file, _use_new_zipfile_serialization=False)
+
+    if is_lora and lora_model is not None:
+        lora_model.save_pretrained(output_lora_dir)
 
 def save_dataset(path, name, dataset):
     os.makedirs(path, exist_ok=True)
