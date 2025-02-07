@@ -210,7 +210,9 @@ if __name__ == "__main__":
                      'Arabic': 'ar', 'Bulgarian': 'bg', 'Croatian': 'hr', 'Hungarian': 'hu',
                      'Italian': 'it', 'Lithuanian': 'lt', 'Macedonian': 'mk', 'Polish': 'pl',
                      'Portuguese': 'pt', 'Albanian': 'sq', 'Serbian': 'sr', 'Turkish': 'tr',
-                     'Vietnamese': 'vi', 'Hindi': 'hi', 'Flemish': 'nl', 'Urdu': 'ur'}
+                     'Vietnamese': 'vi', 'Hindi': 'hi', 'Flemish': 'nl', 'Urdu': 'ur',
+                     # Americas NLI
+                     "Aymara": "ay", "Guarani": "gn", "Quechua": "qu"}
     langs_map_nllb = {
         "English": "eng_Latn",
         "Swahili": "swh_Latn",
