@@ -77,7 +77,7 @@ class NaiveMindReasoner(nn.Module):
             self.encoder_mt = self.model_mt.get_encoder()
 
         # ============= 2) Initialize LLM =============
-        model_llm = AutoModelForCausalLM.from_pretrained(llm_path, trust_remote_code=True)
+        model_llm = AutoModelForCausalLM.from_pretrained(llm_path, trust_remote_code=True, attn_implementation='eager')
         self.model_llm = model_llm
         self.llm_embedding_layer = self.model_llm.get_input_embeddings()
         # Freeze all params in the LLM by default
