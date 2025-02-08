@@ -193,6 +193,11 @@ def main(args):
     # ---------------------------
     # 6) DeepSpeed Initialization
     # ---------------------------
+    # This for a problem with mT5 models and DeepSpeed
+    for param in model.parameters():
+        if not param.data.is_contiguous():
+            param.data = param.data.contiguous()
+
     parameters = filter(lambda p: p.requires_grad, model.parameters())
     model, optimizer, _, __ = deepspeed.initialize(
         config=ds_config,
