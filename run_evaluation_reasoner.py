@@ -106,7 +106,7 @@ def main(args):
     if args.lora_path is not None and PEFT_AVAILABLE:
         print(f"Loading LoRA adapter from: {args.lora_path}")
         model.model_llm = PeftModel.from_pretrained(
-            model.model_llm,
+            model.model_llm.model, # this should be the transformers model, not the PeftModel
             args.lora_path,
             is_trainable=False  # we only need it in eval mode
         )
@@ -121,7 +121,7 @@ def main(args):
     for param in model.parameters():
         if not param.data.is_contiguous():
             param.data = param.data.contiguous()
-            
+
     parameters = filter(lambda p: p.requires_grad, model.parameters())
     model, _, _, _ = deepspeed.initialize(
         config=ds_config,
